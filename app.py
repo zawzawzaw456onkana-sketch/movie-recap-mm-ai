@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 import os
@@ -53,14 +53,10 @@ ALLOWED_AUDIO_EXTENSIONS = {
 # OPENAI
 # =========================================================
 
-OPENAI_API_KEY = os.environ.get(
-    "OPENAI_API_KEY"
-)
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 if OPENAI_API_KEY:
-    client = OpenAI(
-        api_key=OPENAI_API_KEY
-    )
+    client = OpenAI(api_key=OPENAI_API_KEY)
 else:
     client = None
 
@@ -69,10 +65,7 @@ else:
 # HELPERS
 # =========================================================
 
-def allowed_extension(
-    filename,
-    allowed_extensions
-):
+def allowed_extension(filename, allowed_extensions):
 
     if not filename:
         return False
@@ -80,19 +73,14 @@ def allowed_extension(
     if "." not in filename:
         return False
 
-    extension = filename.rsplit(
-        ".",
-        1
-    )[1].lower()
+    extension = filename.rsplit(".", 1)[1].lower()
 
     return extension in allowed_extensions
 
 
 def create_job():
 
-    job_id = str(
-        uuid.uuid4()
-    )
+    job_id = str(uuid.uuid4())
 
     job_dir = os.path.join(
         JOB_FOLDER,
@@ -116,14 +104,9 @@ def job_file_path(job_id):
     )
 
 
-def save_job(
-    job_id,
-    data
-):
+def save_job(job_id, data):
 
-    path = job_file_path(
-        job_id
-    )
+    path = job_file_path(job_id)
 
     with open(
         path,
@@ -141,9 +124,7 @@ def save_job(
 
 def load_job(job_id):
 
-    path = job_file_path(
-        job_id
-    )
+    path = job_file_path(job_id)
 
     if not os.path.exists(path):
         return None
@@ -157,25 +138,16 @@ def load_job(job_id):
         return json.load(f)
 
 
-def update_job(
-    job_id,
-    **changes
-):
+def update_job(job_id, **changes):
 
-    job = load_job(
-        job_id
-    )
+    job = load_job(job_id)
 
     if job is None:
         return
 
-    job.update(
-        changes
-    )
+    job.update(changes)
 
-    job["updated_at"] = int(
-        time.time()
-    )
+    job["updated_at"] = int(time.time())
 
     save_job(
         job_id,
@@ -183,24 +155,16 @@ def update_job(
     )
 
 
-def update_pipeline(
-    job_id,
-    step,
-    status
-):
+def update_pipeline(job_id, step, status):
 
-    job = load_job(
-        job_id
-    )
+    job = load_job(job_id)
 
     if job is None:
         return
 
     job["pipeline"][step] = status
 
-    job["updated_at"] = int(
-        time.time()
-    )
+    job["updated_at"] = int(time.time())
 
     save_job(
         job_id,
@@ -217,10 +181,7 @@ def get_ffmpeg():
 # AUDIO EXTRACTION
 # =========================================================
 
-def extract_audio(
-    movie_path,
-    audio_path
-):
+def extract_audio(movie_path, audio_path):
 
     ffmpeg = get_ffmpeg()
 
@@ -248,7 +209,6 @@ def extract_audio(
         "64k",
 
         audio_path
-
     ]
 
     result = subprocess.run(
@@ -270,16 +230,13 @@ def extract_audio(
 # TRANSCRIPTION
 # =========================================================
 
-def transcribe_audio(
-    audio_path
-):
+def transcribe_audio(audio_path):
 
     if client is None:
 
         raise RuntimeError(
-            "OPENAI_API_KEY မရှိသေးပါ။ Render Environment Variables ထဲမှာ OPENAI_API_KEY ထည့်ပါ။"
+            "OPENAI_API_KEY မရှိသေးပါ။"
         )
-
 
     with open(
         audio_path,
@@ -295,15 +252,13 @@ def transcribe_audio(
             language="zh",
 
             response_format="json"
-
         )
-
 
     return result.text
 
 
 # =========================================================
-# BURMESE RECAP SCRIPT
+# BURMESE RECAP
 # =========================================================
 
 def generate_burmese_recap(
@@ -331,7 +286,6 @@ def generate_burmese_recap(
 
         "detailed":
             "ဇာတ်လမ်းအကြောင်းအရာကို အသေးစိတ်၊ အစမှအဆုံး ရှင်းပြသလို"
-
     }
 
 
@@ -375,7 +329,6 @@ Chinese transcript:
         model="gpt-5.6-luna",
 
         input=prompt
-
     )
 
 
@@ -383,7 +336,7 @@ Chinese transcript:
 
 
 # =========================================================
-# COMPLETE AI JOB
+# PIPELINE
 # =========================================================
 
 def run_pipeline(
@@ -395,14 +348,16 @@ def run_pipeline(
 
     try:
 
+        update_job(
+            job_id,
+            status="processing",
+            message="AI processing စတင်နေပါတယ်။"
+        )
+
+
         # -------------------------------------------------
         # AUDIO
         # -------------------------------------------------
-
-        update_job(
-            job_id,
-            status="processing"
-        )
 
         update_pipeline(
             job_id,
@@ -458,9 +413,7 @@ def run_pipeline(
             encoding="utf-8"
         ) as f:
 
-            f.write(
-                transcript
-            )
+            f.write(transcript)
 
 
         update_pipeline(
@@ -499,9 +452,7 @@ def run_pipeline(
             encoding="utf-8"
         ) as f:
 
-            f.write(
-                recap
-            )
+            f.write(recap)
 
 
         update_pipeline(
@@ -512,7 +463,7 @@ def run_pipeline(
 
 
         # -------------------------------------------------
-        # NEXT STEPS
+        # NEXT PIPELINE
         # -------------------------------------------------
 
         update_pipeline(
@@ -553,10 +504,16 @@ def run_pipeline(
 
 
         update_job(
+
             job_id,
+
             status="completed",
-            message="Transcription နှင့် Burmese Recap Script ပြီးပါပြီ။",
+
+            message=
+                "Chinese transcription နှင့် Burmese recap script ပြီးပါပြီ။",
+
             files={
+
                 "transcript":
                     "transcript.txt",
 
@@ -569,8 +526,11 @@ def run_pipeline(
     except Exception as e:
 
         update_job(
+
             job_id,
+
             status="error",
+
             error=str(e)
         )
 
@@ -590,11 +550,10 @@ def home():
             "MovieRecap MM AI backend is running",
 
         "version":
-            "3.0",
+            "4.0",
 
         "openai":
             bool(OPENAI_API_KEY)
-
     })
 
 
@@ -613,8 +572,7 @@ def health():
             "MovieRecap MM AI",
 
         "version":
-            "3.0"
-
+            "4.0"
     })
 
 
@@ -655,7 +613,7 @@ def process_movie():
 
 
         # -------------------------------------------------
-        # SOURCE CHECK
+        # SOURCE
         # -------------------------------------------------
 
         if (
@@ -674,7 +632,7 @@ def process_movie():
 
 
         # -------------------------------------------------
-        # API KEY CHECK
+        # API KEY
         # -------------------------------------------------
 
         if client is None:
@@ -684,13 +642,13 @@ def process_movie():
                 "status": "error",
 
                 "message":
-                    "OPENAI_API_KEY မထည့်ရသေးပါ။ Render → Environment → OPENAI_API_KEY ကို ထည့်ပါ။"
+                    "OPENAI_API_KEY မထည့်ရသေးပါ။"
 
             }), 503
 
 
         # -------------------------------------------------
-        # CREATE JOB
+        # JOB
         # -------------------------------------------------
 
         job_id, job_dir = create_job()
@@ -718,7 +676,7 @@ def process_movie():
                     "status": "error",
 
                     "message":
-                        "MP4, MOV, MKV, AVI, WEBM, M4V video ကို အသုံးပြုပါ။"
+                        "Supported video format မဟုတ်ပါ။"
 
                 }), 400
 
@@ -744,6 +702,7 @@ def process_movie():
         # -------------------------------------------------
 
         voice_saved = False
+
 
         if (
             voice_file
@@ -780,11 +739,12 @@ def process_movie():
                 voice_path
             )
 
+
             voice_saved = True
 
 
         # -------------------------------------------------
-        # JOB
+        # JOB DATA
         # -------------------------------------------------
 
         job_data = {
@@ -812,14 +772,12 @@ def process_movie():
                     movie_url
                     if movie_url
                     else None
-
             },
 
             "voice": {
 
                 "uploaded":
                     voice_saved
-
             },
 
             "options": {
@@ -829,7 +787,6 @@ def process_movie():
 
                 "video_format":
                     video_format
-
             },
 
             "pipeline": {
@@ -863,9 +820,7 @@ def process_movie():
 
                 "final_output":
                     "pending"
-
             }
-
         }
 
 
@@ -876,7 +831,7 @@ def process_movie():
 
 
         # -------------------------------------------------
-        # START BACKGROUND JOB
+        # START
         # -------------------------------------------------
 
         if movie_path:
@@ -894,29 +849,26 @@ def process_movie():
                     job_dir,
 
                     recap_style
-
                 ),
 
                 daemon=True
-
             )
 
             worker.start()
 
-
         else:
 
             update_job(
+
                 job_id,
-                status="waiting_for_video_download",
+
+                status=
+                    "waiting_for_video_download",
+
                 message=
-                    "URL processing will be added in the next pipeline stage."
+                    "URL processing ကို နောက် pipeline မှာ ထည့်ပါမယ်။"
             )
 
-
-        # -------------------------------------------------
-        # RESPONSE
-        # -------------------------------------------------
 
         return jsonify({
 
@@ -930,10 +882,7 @@ def process_movie():
                 job_id,
 
             "status_url":
-                "/status/" + job_id,
-
-            "next":
-                "Audio → Chinese transcription → Burmese recap"
+                "/status/" + job_id
 
         }), 202
 
@@ -952,7 +901,7 @@ def process_movie():
 
 
 # =========================================================
-# JOB STATUS
+# STATUS
 # =========================================================
 
 @app.route(
@@ -961,9 +910,7 @@ def process_movie():
 )
 def job_status(job_id):
 
-    job = load_job(
-        job_id
-    )
+    job = load_job(job_id)
 
 
     if job is None:
@@ -979,13 +926,84 @@ def job_status(job_id):
         }), 404
 
 
-    return jsonify(
-        job
+    return jsonify(job)
+
+
+# =========================================================
+# JOB FILE DOWNLOAD / VIEW
+# =========================================================
+
+@app.route(
+    "/jobs/<job_id>/<filename>",
+    methods=["GET"]
+)
+def job_file(job_id, filename):
+
+    job_dir = os.path.join(
+        JOB_FOLDER,
+        job_id
+    )
+
+
+    if not os.path.isdir(job_dir):
+
+        return jsonify({
+
+            "status":
+                "error",
+
+            "message":
+                "Job မတွေ့ပါ။"
+
+        }), 404
+
+
+    safe_filename = secure_filename(
+        filename
+    )
+
+
+    if safe_filename != filename:
+
+        return jsonify({
+
+            "status":
+                "error",
+
+            "message":
+                "Invalid filename"
+
+        }), 400
+
+
+    file_path = os.path.join(
+        job_dir,
+        safe_filename
+    )
+
+
+    if not os.path.isfile(file_path):
+
+        return jsonify({
+
+            "status":
+                "error",
+
+            "message":
+                "File မတွေ့ပါ။"
+
+        }), 404
+
+
+    return send_from_directory(
+        job_dir,
+        safe_filename,
+        as_attachment=False
     )
 
 
 # =========================================================
-# PIPELINE
+# PIPELINE INFO
 # =========================================================
 
 @app.route(
@@ -1004,7 +1022,7 @@ def pipeline():
             {
                 "step": 1,
                 "name": "Movie Upload",
-                "status": "ready"
+                "status": "implemented"
             },
 
             {
@@ -1060,9 +1078,7 @@ def pipeline():
                 "name": "Final Download",
                 "status": "next"
             }
-
         ]
-
     })
 
 
@@ -1079,7 +1095,8 @@ if __name__ == "__main__":
         )
     )
 
+
     app.run(
         host="0.0.0.0",
         port=port
-        )
+    )
