@@ -1,320 +1,332 @@
 <!DOCTYPE html>
 <html lang="my">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>MovieRecap MM AI</title>
+<title>MovieRecap MM AI</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<style>
+* {
+    box-sizing: border-box;
+}
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0b0b0f;
-      color: #fff;
-    }
+body {
+    margin: 0;
+    background: #09090b;
+    color: #f4f4f5;
+    font-family: Arial, sans-serif;
+}
 
-    .container {
-      width: 100%;
-      max-width: 900px;
-      margin: auto;
-      padding: 20px;
-    }
+.container {
+    width: min(920px, 94%);
+    margin: 30px auto;
+}
 
-    header {
-      text-align: center;
-      padding: 35px 10px 25px;
-    }
+h1 {
+    margin-bottom: 5px;
+    font-size: 32px;
+}
 
-    header h1 {
-      margin: 0;
-      font-size: 32px;
-    }
+.subtitle {
+    color: #a1a1aa;
+    margin-bottom: 25px;
+}
 
-    header p {
-      color: #aaa;
-      margin-top: 10px;
-    }
+.card {
+    background: #18181b;
+    border: 1px solid #27272a;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 18px;
+}
 
-    .card {
-      background: #15151c;
-      border: 1px solid #292933;
-      border-radius: 18px;
-      padding: 20px;
-      margin-bottom: 18px;
-    }
+label {
+    display: block;
+    margin: 14px 0 7px;
+    font-weight: bold;
+}
 
-    .card h2 {
-      margin-top: 0;
-      font-size: 20px;
-    }
+input,
+select,
+button {
+    width: 100%;
+    padding: 13px;
+    border-radius: 10px;
+    border: 1px solid #3f3f46;
+    background: #09090b;
+    color: white;
+    font-size: 15px;
+}
 
-    label {
-      display: block;
-      margin-top: 10px;
-      color: #ddd;
-    }
+input[type="file"] {
+    padding: 10px;
+}
 
-    input,
-    select {
-      width: 100%;
-      padding: 14px;
-      margin-top: 10px;
-      border-radius: 10px;
-      border: 1px solid #3a3a45;
-      background: #0f0f14;
-      color: white;
-      font-size: 15px;
-    }
+button {
+    margin-top: 20px;
+    background: #ffffff;
+    color: #09090b;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+}
 
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 20px 0;
-      color: #777;
-    }
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
-    .divider span {
-      flex: 1;
-      height: 1px;
-      background: #333;
-    }
+.status {
+    padding: 14px;
+    border-radius: 10px;
+    background: #09090b;
+    border: 1px solid #27272a;
+    margin-top: 15px;
+}
 
-    .button {
-      width: 100%;
-      padding: 17px;
-      border: 0;
-      border-radius: 12px;
-      background: #fff;
-      color: #000;
-      font-size: 17px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+.step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #27272a;
+}
 
-    .button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+.step:last-child {
+    border-bottom: none;
+}
 
-    .button:active {
-      transform: scale(0.98);
-    }
+.icon {
+    width: 28px;
+    text-align: center;
+}
 
-    .small {
-      color: #888;
-      font-size: 13px;
-      line-height: 1.6;
-      white-space: pre-line;
-    }
+.pending {
+    color: #71717a;
+}
 
-    .feature {
-      padding: 10px 0;
-      color: #ddd;
-    }
+.processing {
+    color: #facc15;
+}
 
-    .status-ok {
-      color: #7cff9b;
-    }
+.completed {
+    color: #4ade80;
+}
 
-    .status-error {
-      color: #ff7777;
-    }
+.error {
+    color: #f87171;
+}
 
-    .status-loading {
-      color: #ffd166;
-    }
+.result {
+    white-space: pre-wrap;
+    line-height: 1.7;
+    background: #09090b;
+    border-radius: 10px;
+    padding: 15px;
+    max-height: 500px;
+    overflow: auto;
+}
 
-    footer {
-      text-align: center;
-      color: #666;
-      padding: 30px 10px;
-      font-size: 13px;
-    }
-  </style>
+.small {
+    color: #a1a1aa;
+    font-size: 13px;
+}
+
+.hidden {
+    display: none;
+}
+</style>
 </head>
 
 <body>
 
 <div class="container">
 
-  <header>
     <h1>🎬 MovieRecap MM AI</h1>
-    <p>AI နဲ့ မြန်မာလို Movie Recap ဖန်တီးပါ</p>
-  </header>
 
-
-  <!-- MOVIE -->
-  <div class="card">
-
-    <h2>🎬 Movie ထည့်မယ်</h2>
-
-    <label>📁 Movie File</label>
-
-    <input
-      type="file"
-      id="movieFile"
-      accept="video/*"
-    >
-
-    <div class="divider">
-      <span></span>
-      OR
-      <span></span>
+    <div class="subtitle">
+        Chinese Movie → Burmese Recap
     </div>
 
-    <label>🔗 Authorized Video Link</label>
+    <div class="card">
 
-    <input
-      type="url"
-      id="movieUrl"
-      placeholder="https://..."
+        <label>🎬 Movie File</label>
+        <input
+            id="movie"
+            type="file"
+            accept="video/*"
+        >
+
+        <label>🔗 Authorized Video URL</label>
+        <input
+            id="movieUrl"
+            type="url"
+            placeholder="https://..."
+        >
+
+        <label>📝 Recap Style</label>
+
+        <select id="recapStyle">
+            <option value="cinematic">Cinematic</option>
+            <option value="natural">Natural</option>
+            <option value="fast">Fast</option>
+            <option value="detailed">Detailed</option>
+        </select>
+
+        <label>🎞️ Video Format</label>
+
+        <select id="videoFormat">
+            <option value="youtube">YouTube 16:9</option>
+            <option value="shorts">Shorts 9:16</option>
+            <option value="square">Square 1:1</option>
+        </select>
+
+        <label>🎙️ Voice Sample</label>
+
+        <input
+            id="voice"
+            type="file"
+            accept="audio/*"
+        >
+
+        <button
+            id="startButton"
+            onclick="startProcessing()"
+        >
+            🚀 START MOVIE RECAP
+        </button>
+
+    </div>
+
+
+    <div
+        id="processingCard"
+        class="card hidden"
     >
 
-    <p class="small">
-      ကိုယ်ပိုင် သို့မဟုတ် အသုံးပြုခွင့်ရှိသော movie/video ကိုသာ အသုံးပြုပါ။
-    </p>
+        <h2>⚙️ AI Processing</h2>
 
-  </div>
+        <div
+            id="jobInfo"
+            class="small"
+        ></div>
+
+        <div class="status">
+
+            <div
+                id="stepAudio"
+                class="step pending"
+            >
+                <div class="icon">⏳</div>
+                <div>🎧 Audio Extraction</div>
+            </div>
+
+            <div
+                id="stepTranscription"
+                class="step pending"
+            >
+                <div class="icon">⏳</div>
+                <div>🇨🇳 Chinese Speech → Text</div>
+            </div>
+
+            <div
+                id="stepRecap"
+                class="step pending"
+            >
+                <div class="icon">⏳</div>
+                <div>🇲🇲 Burmese Recap Script</div>
+            </div>
+
+            <div
+                id="stepNarration"
+                class="step pending"
+            >
+                <div class="icon">⏳</div>
+                <div>🎙️ Burmese Narration</div>
+            </div>
+
+            <div
+                id="stepScene"
+                class="step pending"
+            >
+                <div class="icon">⏳</div>
+                <div>🎬 AI Scene Selection</div>
+            </div>
+
+            <div
+                id="stepSubtitle"
+                class="step pending"
+            >
+                <div class="icon">⏳</div>
+                <div>💬 Burmese Subtitles</div>
+            </div>
+
+            <div
+                id="stepRender"
+                class="step pending"
+            >
+                <div class="icon">⏳</div>
+                <div>🎞️ Video Rendering</div>
+            </div>
+
+            <div
+                id="stepThumbnail"
+                class="step pending"
+            >
+                <div class="icon">⏳</div>
+                <div>🖼️ Thumbnail</div>
+            </div>
+
+        </div>
+
+        <div
+            id="statusMessage"
+            class="status"
+        >
+            Processing...
+        </div>
+
+    </div>
 
 
-  <!-- STYLE -->
-  <div class="card">
-
-    <h2>📝 Recap Style</h2>
-
-    <select id="recapStyle">
-
-      <option value="cinematic">
-        🎬 ရုပ်ရှင်ဆန်ဆန်
-      </option>
-
-      <option value="natural">
-        🗣️ လူပြောသလို သဘာဝကျကျ
-      </option>
-
-      <option value="fast">
-        ⚡ မြန်မြန်ဆန်ဆန် Recap
-      </option>
-
-      <option value="detailed">
-        📖 အသေးစိတ် Story Recap
-      </option>
-
-    </select>
-
-  </div>
-
-
-  <!-- FORMAT -->
-  <div class="card">
-
-    <h2>🎞️ Video Format</h2>
-
-    <select id="videoFormat">
-
-      <option value="youtube">
-        ▶️ YouTube — 16:9
-      </option>
-
-      <option value="shorts">
-        📱 Shorts / TikTok — 9:16
-      </option>
-
-      <option value="square">
-        ⬜ Square — 1:1
-      </option>
-
-    </select>
-
-  </div>
-
-
-  <!-- VOICE -->
-  <div class="card">
-
-    <h2>🎙️ Voice</h2>
-
-    <label>
-      ကိုယ်ပိုင် / အသုံးပြုခွင့်ရှိသော Voice Sample
-    </label>
-
-    <input
-      type="file"
-      id="voiceFile"
-      accept="audio/*"
+    <div
+        id="resultCard"
+        class="card hidden"
     >
 
-    <p class="small">
-      Voice cloning သည် ကိုယ်ပိုင် သို့မဟုတ် အသုံးပြုခွင့်ရှိသော အသံအတွက်သာ အသုံးပြုပါမည်။
-    </p>
+        <h2>✅ AI Result</h2>
 
-  </div>
+        <h3>🇲🇲 Burmese Recap Script</h3>
 
+        <div
+            id="recapResult"
+            class="result"
+        ></div>
 
-  <!-- EDITING -->
-  <div class="card">
+        <h3>🇨🇳 Chinese Transcript</h3>
 
-    <h2>✨ Auto Editing</h2>
+        <div
+            id="transcriptResult"
+            class="result"
+        ></div>
 
-    <div class="feature">✂️ AI Scene Selection</div>
-    <div class="feature">↔️ Auto Crop / Position</div>
-    <div class="feature">💬 Myanmar Subtitle</div>
-    <div class="feature">🎙️ Burmese Narration Sync</div>
-    <div class="feature">🎚️ Audio Mixing</div>
-
-  </div>
+    </div>
 
 
-  <!-- THUMBNAIL -->
-  <div class="card">
-
-    <h2>🖼️ Thumbnail</h2>
-
-    <p class="small">
-      Recap အတွက် thumbnail ကို နောက်အဆင့်မှာ AI နဲ့ ဖန်တီးနိုင်အောင် ထည့်သွင်းပါမယ်။
-    </p>
-
-  </div>
-
-
-  <!-- START -->
-  <button
-    class="button"
-    id="startButton"
-  >
-    🚀 START MOVIE RECAP
-  </button>
-
-
-  <!-- STATUS -->
-  <div
-    id="status"
-    class="card"
-    style="display:none; margin-top:20px;"
-  >
-
-    <h2>⚙️ Processing</h2>
-
-    <p
-      id="statusText"
-      class="small"
+    <div
+        id="errorCard"
+        class="card hidden"
     >
-      စစ်ဆေးနေပါတယ်...
-    </p>
 
-  </div>
+        <h2>❌ Error</h2>
 
+        <div
+            id="errorMessage"
+            class="result error"
+        ></div>
 
-  <footer>
-    MovieRecap MM AI<br>
-    AI Myanmar Movie Recap
-  </footer>
+    </div>
 
 </div>
 
@@ -322,713 +334,603 @@
 <script>
 
 const BACKEND_URL =
-  "https://movie-recap-mm-ai.onrender.com";
+    "https://movie-recap-mm-ai.onrender.com";
 
 
-const movieFile =
-  document.getElementById("movieFile");
+let currentJobId = null;
 
-const movieUrl =
-  document.getElementById("movieUrl");
-
-const voiceFile =
-  document.getElementById("voiceFile");
-
-const recapStyle =
-  document.getElementById("recapStyle");
-
-const videoFormat =
-  document.getElementById("videoFormat");
-
-const startButton =
-  document.getElementById("startButton");
-
-const status =
-  document.getElementById("status");
-
-const statusText =
-  document.getElementById("statusText");
+let pollingTimer = null;
 
 
+/* =====================================================
+   START
+===================================================== */
 
-/* =========================
-   MOVIE FILE / URL SWITCH
-========================= */
+async function startProcessing() {
 
-movieFile.addEventListener(
-  "change",
-  function () {
+    const movie =
+        document.getElementById("movie").files[0];
 
-    if (movieFile.files.length > 0) {
-      movieUrl.value = "";
+    const voice =
+        document.getElementById("voice").files[0];
+
+    const movieUrl =
+        document.getElementById("movieUrl").value.trim();
+
+    const recapStyle =
+        document.getElementById("recapStyle").value;
+
+    const videoFormat =
+        document.getElementById("videoFormat").value;
+
+
+    if (!movie && !movieUrl) {
+
+        showError(
+            "Movie file သို့မဟုတ် authorized video URL ထည့်ပါ။"
+        );
+
+        return;
     }
 
-  }
-);
-
-
-movieUrl.addEventListener(
-  "input",
-  function () {
-
-    if (movieUrl.value.trim() !== "") {
-      movieFile.value = "";
-    }
-
-  }
-);
-
-
-
-/* =========================
-   STATUS
-========================= */
-
-function showStatus(message, type) {
-
-  status.style.display = "block";
-
-  statusText.className =
-    "small " + type;
-
-  statusText.textContent =
-    message;
-
-}
-
-
-
-/* =========================
-   BACKEND CHECK
-========================= */
-
-async function checkBackend() {
-
-  try {
-
-    const response =
-      await fetch(
-        BACKEND_URL + "/"
-      );
-
-    if (!response.ok) {
-      throw new Error(
-        "Backend error"
-      );
-    }
-
-    const data =
-      await response.json();
-
-    if (
-      data.status !== "ok"
-    ) {
-      throw new Error(
-        "Unexpected response"
-      );
-    }
-
-    return true;
-
-  } catch (error) {
-
-    return false;
-
-  }
-
-}
-
-
-
-/* =========================
-   START PROCESS
-========================= */
-
-startButton.addEventListener(
-  "click",
-  async function () {
-
-
-    /* MOVIE CHECK */
-
-    if (
-      movieFile.files.length === 0 &&
-      movieUrl.value.trim() === ""
-    ) {
-
-      alert(
-        "Movie File သို့မဟုတ် Authorized Video Link တစ်ခု ထည့်ပါ။"
-      );
-
-      return;
-
-    }
-
-
-    /* BUTTON LOCK */
-
-    startButton.disabled = true;
-
-    startButton.textContent =
-      "⏳ PROCESSING...";
-
-
-    showStatus(
-      "🔄 Backend server ကို စစ်ဆေးနေပါတယ်...",
-      "status-loading"
-    );
-
-
-    /* BACKEND CHECK */
-
-    const backendOK =
-      await checkBackend();
-
-
-    if (!backendOK) {
-
-      showStatus(
-        "❌ Backend server ကို ချိတ်ဆက်မရပါ။ ခဏစောင့်ပြီး ပြန်စမ်းပါ။",
-        "status-error"
-      );
-
-      startButton.disabled = false;
-
-      startButton.textContent =
-        "🚀 START MOVIE RECAP";
-
-      return;
-
-    }
-
-
-    /* FORM DATA */
 
     const formData =
-      new FormData();
+        new FormData();
 
 
-    /* MOVIE FILE */
+    if (movie) {
 
-    if (
-      movieFile.files.length > 0
-    ) {
-
-      formData.append(
-        "movie",
-        movieFile.files[0]
-      );
+        formData.append(
+            "movie",
+            movie
+        );
 
     }
 
 
-    /* MOVIE URL */
+    if (voice) {
 
-    if (
-      movieUrl.value.trim() !== ""
-    ) {
+        formData.append(
+            "voice",
+            voice
+        );
 
-      formData.append(
+    }
+
+
+    formData.append(
         "movie_url",
-        movieUrl.value.trim()
-      );
-
-    }
-
-
-    /* VOICE */
-
-    if (
-      voiceFile.files.length > 0
-    ) {
-
-      formData.append(
-        "voice",
-        voiceFile.files[0]
-      );
-
-    }
-
-
-    /* OPTIONS */
-
-    formData.append(
-      "recap_style",
-      recapStyle.value
-    );
-
-    formData.append(
-      "video_format",
-      videoFormat.value
+        movieUrl
     );
 
 
-    /* SEND */
+    formData.append(
+        "recap_style",
+        recapStyle
+    );
 
-    showStatus(
-      "📤 Movie data ကို AI Backend ဆီ ပို့နေပါတယ်...\n\n" +
-      "🎬 Movie source စစ်ဆေးနေပါတယ်...",
-      "status-loading"
+
+    formData.append(
+        "video_format",
+        videoFormat
+    );
+
+
+    const button =
+        document.getElementById(
+            "startButton"
+        );
+
+
+    button.disabled = true;
+
+    button.innerText =
+        "⏳ Uploading...";
+
+
+    hideError();
+
+    hideResult();
+
+
+    document
+        .getElementById(
+            "processingCard"
+        )
+        .classList
+        .remove("hidden");
+
+
+    setMessage(
+        "🎬 Movie ကို backend သို့ ပို့နေပါတယ်..."
     );
 
 
     try {
 
-      const response =
-        await fetch(
-          BACKEND_URL + "/process",
-          {
-            method: "POST",
-            body: formData
-          }
+        const response =
+            await fetch(
+                BACKEND_URL + "/process",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                "Backend error"
+            );
+
+        }
+
+
+        currentJobId =
+            data.job_id;
+
+
+        document
+            .getElementById(
+                "jobInfo"
+            )
+            .innerText =
+            "Job ID: " +
+            currentJobId;
+
+
+        setMessage(
+            "✅ Movie လက်ခံပြီးပါပြီ။ AI processing စတင်နေပါတယ်..."
         );
 
 
-      const data =
-        await response.json();
+        button.innerText =
+            "⚙️ PROCESSING...";
 
 
-      if (!response.ok) {
-
-        throw new Error(
-          data.message ||
-          "Server error"
-        );
-
-      }
-
-
-      /* SUCCESS */
-
-      showStatus(
-
-        "✅ Backend က Movie ကို လက်ခံရရှိပါပြီ။\n\n" +
-
-        "🎬 Movie: " +
-        (
-          movieFile.files.length > 0
-            ? movieFile.files[0].name
-            : movieUrl.value
-        ) +
-
-        "\n\n" +
-
-        "📝 Recap Style: " +
-        recapStyle.value +
-
-        "\n" +
-
-        "🎞️ Video Format: " +
-        videoFormat.value +
-
-        "\n\n" +
-
-        "🎙️ Voice: " +
-        (
-          voiceFile.files.length > 0
-            ? "Voice Sample ထည့်ထားပါတယ်"
-            : "မထည့်ထားပါ"
-        ) +
-
-        "\n\n" +
-
-        "⚙️ နောက်အဆင့်မှာ AI Movie Analysis / Script / Voice / Editing Pipeline ကို ချိတ်ဆက်ပါမယ်။",
-
-        "status-ok"
-
-      );
+        pollJob();
 
 
     } catch (error) {
 
+        showError(
+            error.message
+        );
 
-      showStatus(
+        button.disabled = false;
 
-        "❌ Processing Error\n\n" +
-        error.message,
-
-        "status-error"
-
-      );
+        button.innerText =
+            "🚀 START MOVIE RECAP";
 
     }
-
-
-    /* BUTTON UNLOCK */
-
-    startButton.disabled = false;
-
-    startButton.textContent =
-      "🚀 START MOVIE RECAP";
-
-
-  }
-);
-
-</script>
-
-</body>
-</html>
-    header p {
-      color: #aaa;
-      margin-top: 10px;
-    }
-
-    .card {
-      background: #15151c;
-      border: 1px solid #292933;
-      border-radius: 18px;
-      padding: 20px;
-      margin-bottom: 18px;
-    }
-
-    .card h2 {
-      margin-top: 0;
-      font-size: 20px;
-    }
-
-    label {
-      display: block;
-      margin-top: 10px;
-      color: #ddd;
-    }
-
-    input,
-    select {
-      width: 100%;
-      padding: 14px;
-      margin-top: 10px;
-      border-radius: 10px;
-      border: 1px solid #3a3a45;
-      background: #0f0f14;
-      color: white;
-      font-size: 15px;
-    }
-
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 20px 0;
-      color: #777;
-    }
-
-    .divider span {
-      flex: 1;
-      height: 1px;
-      background: #333;
-    }
-
-    .button {
-      width: 100%;
-      padding: 17px;
-      border: 0;
-      border-radius: 12px;
-      background: #ffffff;
-      color: #000000;
-      font-size: 17px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .button:active {
-      transform: scale(0.98);
-    }
-
-    .small {
-      color: #888;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .feature {
-      padding: 10px 0;
-      color: #ddd;
-    }
-
-    .status-ok {
-      color: #7cff9b;
-    }
-
-    .status-error {
-      color: #ff7777;
-    }
-
-    .status-loading {
-      color: #ffd166;
-    }
-
-    footer {
-      text-align: center;
-      color: #666;
-      padding: 30px 10px;
-      font-size: 13px;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="container">
-
-  <header>
-    <h1>🎬 MovieRecap MM AI</h1>
-    <p>AI နဲ့ မြန်မာလို Movie Recap ဖန်တီးပါ</p>
-  </header>
-
-  <div class="card">
-    <h2>🎬 Movie ထည့်မယ်</h2>
-
-    <label>📁 Movie File</label>
-
-    <input
-      type="file"
-      id="movieFile"
-      accept="video/*"
-    >
-
-    <div class="divider">
-      <span></span>
-      OR
-      <span></span>
-    </div>
-
-    <label>🔗 Authorized Video Link</label>
-
-    <input
-      type="url"
-      id="movieUrl"
-      placeholder="https://..."
-    >
-
-    <p class="small">
-      ကိုယ်ပိုင် သို့မဟုတ် အသုံးပြုခွင့်ရှိသော movie/video ကိုသာ အသုံးပြုပါ။
-    </p>
-  </div>
-
-  <div class="card">
-    <h2>📝 Recap Style</h2>
-
-    <select id="recapStyle">
-      <option value="cinematic">🎬 ရုပ်ရှင်ဆန်ဆန်</option>
-      <option value="natural">🗣️ လူပြောသလို သဘာဝကျကျ</option>
-      <option value="fast">⚡ မြန်မြန်ဆန်ဆန် Recap</option>
-      <option value="detailed">📖 အသေးစိတ် Story Recap</option>
-    </select>
-  </div>
-
-  <div class="card">
-    <h2>🎞️ Video Format</h2>
-
-    <select id="videoFormat">
-      <option value="youtube">▶️ YouTube — 16:9</option>
-      <option value="shorts">📱 Shorts / TikTok — 9:16</option>
-      <option value="square">⬜ Square — 1:1</option>
-    </select>
-  </div>
-
-  <div class="card">
-    <h2>🎙️ Voice</h2>
-
-    <label>ကိုယ်ပိုင် / အသုံးပြုခွင့်ရှိသော Voice Sample</label>
-
-    <input
-      type="file"
-      id="voiceFile"
-      accept="audio/*"
-    >
-
-    <p class="small">
-      Voice cloning သည် ကိုယ်ပိုင် သို့မဟုတ် အသုံးပြုခွင့်ရှိသော အသံအတွက်သာ အသုံးပြုပါမည်။
-    </p>
-  </div>
-
-  <div class="card">
-    <h2>✨ Auto Editing</h2>
-
-    <div class="feature">✂️ AI Scene Selection</div>
-    <div class="feature">↔️ Auto Crop / Position</div>
-    <div class="feature">💬 Myanmar Subtitle</div>
-    <div class="feature">🎙️ Burmese Narration Sync</div>
-    <div class="feature">🎚️ Audio Mixing</div>
-  </div>
-
-  <div class="card">
-    <h2>🖼️ Thumbnail</h2>
-
-    <p class="small">
-      Recap အတွက် thumbnail ကို နောက်အဆင့်မှာ AI နဲ့ ဖန်တီးနိုင်အောင် ထည့်သွင်းပါမယ်။
-    </p>
-  </div>
-
-  <button class="button" id="startButton">
-    🚀 START MOVIE RECAP
-  </button>
-
-  <div id="status" class="card" style="display:none; margin-top:20px;">
-    <h2>⚙️ Processing</h2>
-    <p id="statusText" class="small">
-      စစ်ဆေးနေပါတယ်...
-    </p>
-  </div>
-
-  <footer>
-    MovieRecap MM AI<br>
-    AI Myanmar Movie Recap
-  </footer>
-
-</div>
-
-<script>
-
-const BACKEND_URL =
-  "https://movie-recap-mm-ai.onrender.com";
-
-const movieFile =
-  document.getElementById("movieFile");
-
-const movieUrl =
-  document.getElementById("movieUrl");
-
-const voiceFile =
-  document.getElementById("voiceFile");
-
-const recapStyle =
-  document.getElementById("recapStyle");
-
-const videoFormat =
-  document.getElementById("videoFormat");
-
-const startButton =
-  document.getElementById("startButton");
-
-const status =
-  document.getElementById("status");
-
-const statusText =
-  document.getElementById("statusText");
-
-
-movieFile.addEventListener("change", function () {
-
-  if (movieFile.files.length > 0) {
-    movieUrl.value = "";
-  }
-
-});
-
-
-movieUrl.addEventListener("input", function () {
-
-  if (movieUrl.value.trim() !== "") {
-    movieFile.value = "";
-  }
-
-});
-
-
-async function checkBackend() {
-
-  status.style.display = "block";
-
-  statusText.className = "small status-loading";
-
-  statusText.textContent =
-    "🔄 AI processing server ကို ချိတ်ဆက်နေပါတယ်...";
-
-  try {
-
-    const response =
-      await fetch(BACKEND_URL + "/");
-
-    if (!response.ok) {
-      throw new Error("Backend error");
-    }
-
-    const data =
-      await response.json();
-
-    if (data.status === "ok") {
-
-      statusText.className =
-        "small status-ok";
-
-      statusText.textContent =
-        "✅ Backend ချိတ်ဆက်ပြီးပါပြီ။ Movie processing system ကို စတင်နိုင်ပါပြီ။";
-
-    } else {
-
-      throw new Error("Unexpected response");
-
-    }
-
-  } catch (error) {
-
-    statusText.className =
-      "small status-error";
-
-    statusText.textContent =
-      "❌ Backend ကို ချိတ်ဆက်မရပါ။ Internet connection ကို စစ်ပါ။";
-
-  }
 
 }
 
 
-startButton.addEventListener("click", async function () {
+/* =====================================================
+   POLL STATUS
+===================================================== */
 
-  if (
-    movieFile.files.length === 0 &&
-    movieUrl.value.trim() === ""
-  ) {
+async function pollJob() {
 
-    alert(
-      "Movie File သို့မဟုတ် Authorized Video Link တစ်ခု ထည့်ပါ။"
+    if (!currentJobId) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                BACKEND_URL +
+                "/status/" +
+                currentJobId
+            );
+
+
+        const job =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                job.message ||
+                "Status error"
+            );
+
+        }
+
+
+        updatePipeline(
+            job.pipeline || {}
+        );
+
+
+        if (job.status === "completed") {
+
+            setMessage(
+                "🎉 Burmese Recap Script ပြီးပါပြီ။"
+            );
+
+
+            showResult(
+                job
+            );
+
+
+            enableStartButton();
+
+
+            return;
+        }
+
+
+        if (job.status === "error") {
+
+            showError(
+                job.error ||
+                "AI processing မအောင်မြင်ပါ။"
+            );
+
+
+            enableStartButton();
+
+
+            return;
+        }
+
+
+        if (job.status === "processing") {
+
+            setMessage(
+                "⚙️ AI processing လုပ်နေပါတယ်..."
+            );
+
+        }
+
+
+        pollingTimer =
+            setTimeout(
+                pollJob,
+                3000
+            );
+
+
+    } catch (error) {
+
+        showError(
+            error.message
+        );
+
+
+        enableStartButton();
+
+    }
+
+}
+
+
+/* =====================================================
+   PIPELINE UI
+===================================================== */
+
+function updatePipeline(
+    pipeline
+) {
+
+    updateStep(
+        "stepAudio",
+        pipeline.audio_extraction
     );
 
-    return;
 
-  }
-
-
-  status.style.display = "block";
-
-  statusText.className =
-    "small status-loading";
-
-  statusText.textContent =
-    "🔄 Movie information ကို စစ်ဆေးနေပါတယ်...";
+    updateStep(
+        "stepTranscription",
+        pipeline.transcription
+    );
 
 
-  const movieName =
-    movieFile.files.length > 0
-      ? movieFile.files[0].name
-      : movieUrl.value.trim();
+    updateStep(
+        "stepRecap",
+        pipeline.recap_script
+    );
 
 
-  setTimeout(function () {
-
-    statusText.textContent =
-      "🎬 Movie: " +
-      movieName +
-      "\n\n" +
-      "📝 Style: " +
-      recapStyle.value +
-      "\n" +
-      "🎞️ Format: " +
-      videoFormat.value +
-      "\n\n" +
-      "⚙️ Processing system ကို ပြင်ဆင်နေပါတယ်...";
-
-  }, 500);
+    updateStep(
+        "stepNarration",
+        pipeline.narration
+    );
 
 
-  await checkBackend();
+    updateStep(
+        "stepScene",
+        pipeline.scene_selection
+    );
 
-});
 
+    updateStep(
+        "stepSubtitle",
+        pipeline.subtitle
+    );
+
+
+    updateStep(
+        "stepRender",
+        pipeline.video_render
+    );
+
+
+    updateStep(
+        "stepThumbnail",
+        pipeline.thumbnail
+    );
+
+}
+
+
+/* =====================================================
+   STEP
+===================================================== */
+
+function updateStep(
+    id,
+    status
+) {
+
+    const element =
+        document.getElementById(
+            id
+        );
+
+
+    if (!element) {
+        return;
+    }
+
+
+    element.className =
+        "step " +
+        (
+            status ||
+            "pending"
+        );
+
+
+    const icon =
+        element.querySelector(
+            ".icon"
+        );
+
+
+    if (status === "completed") {
+
+        icon.innerText =
+            "✅";
+
+    } else if (
+        status === "processing"
+    ) {
+
+        icon.innerText =
+            "🔄";
+
+    } else if (
+        status === "error"
+    ) {
+
+        icon.innerText =
+            "❌";
+
+    } else {
+
+        icon.innerText =
+            "⏳";
+
+    }
+
+}
+
+
+/* =====================================================
+   RESULT
+===================================================== */
+
+function showResult(
+    job
+) {
+
+    document
+        .getElementById(
+            "resultCard"
+        )
+        .classList
+        .remove("hidden");
+
+
+    const files =
+        job.files || {};
+
+
+    if (files.burmese_recap) {
+
+        fetchJobFile(
+            currentJobId,
+            files.burmese_recap,
+            "recapResult"
+        );
+
+    }
+
+
+    if (files.transcript) {
+
+        fetchJobFile(
+            currentJobId,
+            files.transcript,
+            "transcriptResult"
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   FILE FETCH
+===================================================== */
+
+async function fetchJobFile(
+    jobId,
+    filename,
+    elementId
+) {
+
+    try {
+
+        const response =
+            await fetch(
+                BACKEND_URL +
+                "/jobs/" +
+                jobId +
+                "/" +
+                filename
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "File မရနိုင်ပါ"
+            );
+
+        }
+
+
+        const text =
+            await response.text();
+
+
+        document
+            .getElementById(
+                elementId
+            )
+            .innerText =
+            text;
+
+
+    } catch (error) {
+
+        document
+            .getElementById(
+                elementId
+            )
+            .innerText =
+            "Result file ကို မဖတ်နိုင်သေးပါ။";
+
+    }
+
+}
+
+
+/* =====================================================
+   MESSAGE
+===================================================== */
+
+function setMessage(
+    message
+) {
+
+    document
+        .getElementById(
+            "statusMessage"
+        )
+        .innerText =
+        message;
+
+}
+
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+function showError(
+    message
+) {
+
+    document
+        .getElementById(
+            "errorCard"
+        )
+        .classList
+        .remove("hidden");
+
+
+    document
+        .getElementById(
+            "errorMessage"
+        )
+        .innerText =
+        message;
+
+}
+
+
+function hideError() {
+
+    document
+        .getElementById(
+            "errorCard"
+        )
+        .classList
+        .add("hidden");
+
+}
+
+
+/* =====================================================
+   RESULT HIDE
+===================================================== */
+
+function hideResult() {
+
+    document
+        .getElementById(
+            "resultCard"
+        )
+        .classList
+        .add("hidden");
+
+}
+
+
+/* =====================================================
+   BUTTON
+===================================================== */
+
+function enableStartButton() {
+
+    const button =
+        document.getElementById(
+            "startButton"
+        );
+
+
+    button.disabled = false;
+
+    button.innerText =
+        "🚀 START MOVIE RECAP";
+
+}
 
 </script>
 
 </body>
-</html>
+  </html>
