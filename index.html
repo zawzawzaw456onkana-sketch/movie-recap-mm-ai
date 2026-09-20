@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>MovieRecap MM AI</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b0b0f;
+      color: #ffffff;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    header {
+      text-align: center;
+      padding: 35px 10px 25px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+
+    header p {
+      color: #aaa;
+      margin-top: 10px;
+    }
+
+    .card {
+      background: #15151c;
+      border: 1px solid #292933;
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #3a3a45;
+      background: #0f0f14;
+      color: white;
+      font-size: 15px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0;
+      color: #777;
+    }
+
+    .divider span {
+      flex: 1;
+      height: 1px;
+      background: #333;
+    }
+
+    .button {
+      width: 100%;
+      padding: 17px;
+      border: 0;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #000000;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .button:active {
+      transform: scale(0.98);
+    }
+
+    .small {
+      color: #888;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .feature {
+      padding: 10px 0;
+      color: #ddd;
+    }
+
+    footer {
+      text-align: center;
+      color: #666;
+      padding: 30px 10px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <header>
+      <h1>🎬 MovieRecap MM AI</h1>
+      <p>AI နဲ့ မြန်မာလို Movie Recap ဖန်တီးပါ</p>
+    </header>
+
+    <div class="card">
+      <h2>🎬 Movie ထည့်မယ်</h2>
+
+      <label>📁 Movie File</label>
+
+      <input
+        type="file"
+        id="movieFile"
+        accept="video/*"
+      >
+
+      <div class="divider">
+        <span></span>
+        OR
+        <span></span>
+      </div>
+
+      <label>🔗 Authorized Video Link</label>
+
+      <input
+        type="url"
+        id="movieUrl"
+        placeholder="https://..."
+      >
+
+      <p class="small">
+        ကိုယ်ပိုင် သို့မဟုတ် အသုံးပြုခွင့်ရှိသော movie/video ကိုသာ အသုံးပြုပါ။
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>📝 Recap Style</h2>
+
+      <select id="recapStyle">
+        <option value="cinematic">🎬 ရုပ်ရှင်ဆန်ဆန်</option>
+        <option value="natural">🗣️ လူပြောသလို သဘာဝကျကျ</option>
+        <option value="fast">⚡ မြန်မြန်ဆန်ဆန် Recap</option>
+        <option value="detailed">📖 အသေးစိတ် Story Recap</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>🎞️ Video Format</h2>
+
+      <select id="videoFormat">
+        <option value="youtube">▶️ YouTube — 16:9</option>
+        <option value="shorts">📱 Shorts / TikTok — 9:16</option>
+        <option value="square">⬜ Square — 1:1</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <h2>🎙️ Voice</h2>
+
+      <label>ကိုယ်ပိုင် / အသုံးပြုခွင့်ရှိသော Voice Sample</label>
+
+      <input
+        type="file"
+        id="voiceFile"
+        accept="audio/*"
+      >
+
+      <p class="small">
+        Voice cloning သည် ကိုယ်ပိုင် သို့မဟုတ် အသုံးပြုခွင့်ရှိသော အသံအတွက်သာ အသုံးပြုပါမည်။
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>✨ Auto Editing</h2>
+
+      <div class="feature">✂️ AI Scene Selection</div>
+      <div class="feature">↔️ Auto Crop / Position</div>
+      <div class="feature">💬 Myanmar Subtitle</div>
+      <div class="feature">🎙️ Burmese Narration Sync</div>
+      <div class="feature">🎚️ Audio Mixing</div>
+    </div>
+
+    <div class="card">
+      <h2>🖼️ Thumbnail</h2>
+
+      <p class="small">
+        Recap အတွက် thumbnail ကို နောက်အဆင့်မှာ AI နဲ့ ဖန်တီးနိုင်အောင် ထည့်သွင်းပါမယ်။
+      </p>
+    </div>
+
+    <button class="button" id="startButton">
+      🚀 START MOVIE RECAP
+    </button>
+
+    <div id="status" class="card" style="display:none; margin-top:20px;">
+      <h2>⚙️ Processing</h2>
+      <p id="statusText" class="small">
+        Movie ကို စစ်ဆေးနေပါတယ်...
+      </p>
+    </div>
+
+    <footer>
+      MovieRecap MM AI<br>
+      AI Myanmar Movie Recap
+    </footer>
+
+  </div>
+
+  <script>
+
+    const movieFile = document.getElementById("movieFile");
+    const movieUrl = document.getElementById("movieUrl");
+    const startButton = document.getElementById("startButton");
+    const status = document.getElementById("status");
+    const statusText = document.getElementById("statusText");
+
+    movieFile.addEventListener("change", function () {
+
+      if (movieFile.files.length > 0) {
+        movieUrl.value = "";
+      }
+
+    });
+
+    movieUrl.addEventListener("input", function () {
+
+      if (movieUrl.value.trim() !== "") {
+        movieFile.value = "";
+      }
+
+    });
+
+    startButton.addEventListener("click", function () {
+
+      if (
+        movieFile.files.length === 0 &&
+        movieUrl.value.trim() === ""
+      ) {
+        alert("Movie File သို့မဟုတ် Video Link တစ်ခု ထည့်ပါ။");
+        return;
+      }
+
+      status.style.display = "block";
+
+      statusText.textContent =
+        "Movie ကို processing system ထဲ ထည့်နေပါတယ်...";
+
+    });
+
+  </script>
+
+</body>
+</html>
