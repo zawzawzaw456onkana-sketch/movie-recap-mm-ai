@@ -15,7 +15,7 @@
       margin: 0;
       font-family: Arial, sans-serif;
       background: #0b0b0f;
-      color: #ffffff;
+      color: #fff;
     }
 
     .container {
@@ -35,6 +35,640 @@
       font-size: 32px;
     }
 
+    header p {
+      color: #aaa;
+      margin-top: 10px;
+    }
+
+    .card {
+      background: #15151c;
+      border: 1px solid #292933;
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      color: #ddd;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #3a3a45;
+      background: #0f0f14;
+      color: white;
+      font-size: 15px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0;
+      color: #777;
+    }
+
+    .divider span {
+      flex: 1;
+      height: 1px;
+      background: #333;
+    }
+
+    .button {
+      width: 100%;
+      padding: 17px;
+      border: 0;
+      border-radius: 12px;
+      background: #fff;
+      color: #000;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .button:active {
+      transform: scale(0.98);
+    }
+
+    .small {
+      color: #888;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-line;
+    }
+
+    .feature {
+      padding: 10px 0;
+      color: #ddd;
+    }
+
+    .status-ok {
+      color: #7cff9b;
+    }
+
+    .status-error {
+      color: #ff7777;
+    }
+
+    .status-loading {
+      color: #ffd166;
+    }
+
+    footer {
+      text-align: center;
+      color: #666;
+      padding: 30px 10px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>🎬 MovieRecap MM AI</h1>
+    <p>AI နဲ့ မြန်မာလို Movie Recap ဖန်တီးပါ</p>
+  </header>
+
+
+  <!-- MOVIE -->
+  <div class="card">
+
+    <h2>🎬 Movie ထည့်မယ်</h2>
+
+    <label>📁 Movie File</label>
+
+    <input
+      type="file"
+      id="movieFile"
+      accept="video/*"
+    >
+
+    <div class="divider">
+      <span></span>
+      OR
+      <span></span>
+    </div>
+
+    <label>🔗 Authorized Video Link</label>
+
+    <input
+      type="url"
+      id="movieUrl"
+      placeholder="https://..."
+    >
+
+    <p class="small">
+      ကိုယ်ပိုင် သို့မဟုတ် အသုံးပြုခွင့်ရှိသော movie/video ကိုသာ အသုံးပြုပါ။
+    </p>
+
+  </div>
+
+
+  <!-- STYLE -->
+  <div class="card">
+
+    <h2>📝 Recap Style</h2>
+
+    <select id="recapStyle">
+
+      <option value="cinematic">
+        🎬 ရုပ်ရှင်ဆန်ဆန်
+      </option>
+
+      <option value="natural">
+        🗣️ လူပြောသလို သဘာဝကျကျ
+      </option>
+
+      <option value="fast">
+        ⚡ မြန်မြန်ဆန်ဆန် Recap
+      </option>
+
+      <option value="detailed">
+        📖 အသေးစိတ် Story Recap
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <!-- FORMAT -->
+  <div class="card">
+
+    <h2>🎞️ Video Format</h2>
+
+    <select id="videoFormat">
+
+      <option value="youtube">
+        ▶️ YouTube — 16:9
+      </option>
+
+      <option value="shorts">
+        📱 Shorts / TikTok — 9:16
+      </option>
+
+      <option value="square">
+        ⬜ Square — 1:1
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <!-- VOICE -->
+  <div class="card">
+
+    <h2>🎙️ Voice</h2>
+
+    <label>
+      ကိုယ်ပိုင် / အသုံးပြုခွင့်ရှိသော Voice Sample
+    </label>
+
+    <input
+      type="file"
+      id="voiceFile"
+      accept="audio/*"
+    >
+
+    <p class="small">
+      Voice cloning သည် ကိုယ်ပိုင် သို့မဟုတ် အသုံးပြုခွင့်ရှိသော အသံအတွက်သာ အသုံးပြုပါမည်။
+    </p>
+
+  </div>
+
+
+  <!-- EDITING -->
+  <div class="card">
+
+    <h2>✨ Auto Editing</h2>
+
+    <div class="feature">✂️ AI Scene Selection</div>
+    <div class="feature">↔️ Auto Crop / Position</div>
+    <div class="feature">💬 Myanmar Subtitle</div>
+    <div class="feature">🎙️ Burmese Narration Sync</div>
+    <div class="feature">🎚️ Audio Mixing</div>
+
+  </div>
+
+
+  <!-- THUMBNAIL -->
+  <div class="card">
+
+    <h2>🖼️ Thumbnail</h2>
+
+    <p class="small">
+      Recap အတွက် thumbnail ကို နောက်အဆင့်မှာ AI နဲ့ ဖန်တီးနိုင်အောင် ထည့်သွင်းပါမယ်။
+    </p>
+
+  </div>
+
+
+  <!-- START -->
+  <button
+    class="button"
+    id="startButton"
+  >
+    🚀 START MOVIE RECAP
+  </button>
+
+
+  <!-- STATUS -->
+  <div
+    id="status"
+    class="card"
+    style="display:none; margin-top:20px;"
+  >
+
+    <h2>⚙️ Processing</h2>
+
+    <p
+      id="statusText"
+      class="small"
+    >
+      စစ်ဆေးနေပါတယ်...
+    </p>
+
+  </div>
+
+
+  <footer>
+    MovieRecap MM AI<br>
+    AI Myanmar Movie Recap
+  </footer>
+
+</div>
+
+
+<script>
+
+const BACKEND_URL =
+  "https://movie-recap-mm-ai.onrender.com";
+
+
+const movieFile =
+  document.getElementById("movieFile");
+
+const movieUrl =
+  document.getElementById("movieUrl");
+
+const voiceFile =
+  document.getElementById("voiceFile");
+
+const recapStyle =
+  document.getElementById("recapStyle");
+
+const videoFormat =
+  document.getElementById("videoFormat");
+
+const startButton =
+  document.getElementById("startButton");
+
+const status =
+  document.getElementById("status");
+
+const statusText =
+  document.getElementById("statusText");
+
+
+
+/* =========================
+   MOVIE FILE / URL SWITCH
+========================= */
+
+movieFile.addEventListener(
+  "change",
+  function () {
+
+    if (movieFile.files.length > 0) {
+      movieUrl.value = "";
+    }
+
+  }
+);
+
+
+movieUrl.addEventListener(
+  "input",
+  function () {
+
+    if (movieUrl.value.trim() !== "") {
+      movieFile.value = "";
+    }
+
+  }
+);
+
+
+
+/* =========================
+   STATUS
+========================= */
+
+function showStatus(message, type) {
+
+  status.style.display = "block";
+
+  statusText.className =
+    "small " + type;
+
+  statusText.textContent =
+    message;
+
+}
+
+
+
+/* =========================
+   BACKEND CHECK
+========================= */
+
+async function checkBackend() {
+
+  try {
+
+    const response =
+      await fetch(
+        BACKEND_URL + "/"
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        "Backend error"
+      );
+    }
+
+    const data =
+      await response.json();
+
+    if (
+      data.status !== "ok"
+    ) {
+      throw new Error(
+        "Unexpected response"
+      );
+    }
+
+    return true;
+
+  } catch (error) {
+
+    return false;
+
+  }
+
+}
+
+
+
+/* =========================
+   START PROCESS
+========================= */
+
+startButton.addEventListener(
+  "click",
+  async function () {
+
+
+    /* MOVIE CHECK */
+
+    if (
+      movieFile.files.length === 0 &&
+      movieUrl.value.trim() === ""
+    ) {
+
+      alert(
+        "Movie File သို့မဟုတ် Authorized Video Link တစ်ခု ထည့်ပါ။"
+      );
+
+      return;
+
+    }
+
+
+    /* BUTTON LOCK */
+
+    startButton.disabled = true;
+
+    startButton.textContent =
+      "⏳ PROCESSING...";
+
+
+    showStatus(
+      "🔄 Backend server ကို စစ်ဆေးနေပါတယ်...",
+      "status-loading"
+    );
+
+
+    /* BACKEND CHECK */
+
+    const backendOK =
+      await checkBackend();
+
+
+    if (!backendOK) {
+
+      showStatus(
+        "❌ Backend server ကို ချိတ်ဆက်မရပါ။ ခဏစောင့်ပြီး ပြန်စမ်းပါ။",
+        "status-error"
+      );
+
+      startButton.disabled = false;
+
+      startButton.textContent =
+        "🚀 START MOVIE RECAP";
+
+      return;
+
+    }
+
+
+    /* FORM DATA */
+
+    const formData =
+      new FormData();
+
+
+    /* MOVIE FILE */
+
+    if (
+      movieFile.files.length > 0
+    ) {
+
+      formData.append(
+        "movie",
+        movieFile.files[0]
+      );
+
+    }
+
+
+    /* MOVIE URL */
+
+    if (
+      movieUrl.value.trim() !== ""
+    ) {
+
+      formData.append(
+        "movie_url",
+        movieUrl.value.trim()
+      );
+
+    }
+
+
+    /* VOICE */
+
+    if (
+      voiceFile.files.length > 0
+    ) {
+
+      formData.append(
+        "voice",
+        voiceFile.files[0]
+      );
+
+    }
+
+
+    /* OPTIONS */
+
+    formData.append(
+      "recap_style",
+      recapStyle.value
+    );
+
+    formData.append(
+      "video_format",
+      videoFormat.value
+    );
+
+
+    /* SEND */
+
+    showStatus(
+      "📤 Movie data ကို AI Backend ဆီ ပို့နေပါတယ်...\n\n" +
+      "🎬 Movie source စစ်ဆေးနေပါတယ်...",
+      "status-loading"
+    );
+
+
+    try {
+
+      const response =
+        await fetch(
+          BACKEND_URL + "/process",
+          {
+            method: "POST",
+            body: formData
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.message ||
+          "Server error"
+        );
+
+      }
+
+
+      /* SUCCESS */
+
+      showStatus(
+
+        "✅ Backend က Movie ကို လက်ခံရရှိပါပြီ။\n\n" +
+
+        "🎬 Movie: " +
+        (
+          movieFile.files.length > 0
+            ? movieFile.files[0].name
+            : movieUrl.value
+        ) +
+
+        "\n\n" +
+
+        "📝 Recap Style: " +
+        recapStyle.value +
+
+        "\n" +
+
+        "🎞️ Video Format: " +
+        videoFormat.value +
+
+        "\n\n" +
+
+        "🎙️ Voice: " +
+        (
+          voiceFile.files.length > 0
+            ? "Voice Sample ထည့်ထားပါတယ်"
+            : "မထည့်ထားပါ"
+        ) +
+
+        "\n\n" +
+
+        "⚙️ နောက်အဆင့်မှာ AI Movie Analysis / Script / Voice / Editing Pipeline ကို ချိတ်ဆက်ပါမယ်။",
+
+        "status-ok"
+
+      );
+
+
+    } catch (error) {
+
+
+      showStatus(
+
+        "❌ Processing Error\n\n" +
+        error.message,
+
+        "status-error"
+
+      );
+
+    }
+
+
+    /* BUTTON UNLOCK */
+
+    startButton.disabled = false;
+
+    startButton.textContent =
+      "🚀 START MOVIE RECAP";
+
+
+  }
+);
+
+</script>
+
+</body>
+</html>
     header p {
       color: #aaa;
       margin-top: 10px;
