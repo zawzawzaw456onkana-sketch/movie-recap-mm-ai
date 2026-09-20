@@ -1,214 +1,97 @@
+import os
+import json
+import uuid
+import shutil
+import subprocess
+import threading
+from pathlib import Path
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-
-import os
-import uuid
-import json
-import time
-import threading
-import subprocess
-
-from werkzeug.utils import secure_filename
-from openai import OpenAI
-import imageio_ffmpeg
-
+from groq import Groq
 
 app = Flask(__name__)
 CORS(app)
 
+BASE_DIR = Path(__file__).resolve().parent
+UPLOAD_DIR = BASE_DIR / "uploads"
+JOBS_DIR = BASE_DIR / "jobs"
 
-# =========================================================
-# CONFIG
-# =========================================================
+UPLOAD_DIR.mkdir(exist_ok=True)
+JOBS_DIR.mkdir(exist_ok=True)
 
-UPLOAD_FOLDER = "uploads"
-JOB_FOLDER = "jobs"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(JOB_FOLDER, exist_ok=True)
-
-
-ALLOWED_VIDEO_EXTENSIONS = {
-    "mp4",
-    "mov",
-    "mkv",
-    "avi",
-    "webm",
-    "m4v"
-}
-
-
-ALLOWED_AUDIO_EXTENSIONS = {
-    "mp3",
-    "wav",
-    "m4a",
-    "aac",
-    "ogg",
-    "flac",
-    "webm"
-}
-
-
-# =========================================================
-# OPENAI
-# =========================================================
-
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-
-if OPENAI_API_KEY:
-    client = OpenAI(api_key=OPENAI_API_KEY)
+if GROQ_API_KEY:
+    groq_client = Groq(api_key=GROQ_API_KEY)
 else:
-    client = None
+    groq_client = None
 
 
-# =========================================================
-# HELPERS
-# =========================================================
+def get_ffmpeg():
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        return "ffmpeg"
 
-def allowed_extension(filename, allowed_extensions):
 
-    if not filename:
-        return False
+FFMPEG = get_ffmpeg()
 
-    if "." not in filename:
-        return False
 
-    extension = filename.rsplit(".", 1)[1].lower()
+def update_job(job_dir, **changes):
+    job_file = job_dir / "job.json"
 
-    return extension in allowed_extensions
+    try:
+        data = json.loads(job_file.read_text(encoding="utf-8"))
+    except Exception:
+        data = {}
+
+    data.update(changes)
+
+    job_file.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
 
 
 def create_job():
-
     job_id = str(uuid.uuid4())
+    job_dir = JOBS_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
 
-    job_dir = os.path.join(
-        JOB_FOLDER,
-        job_id
-    )
+    job = {
+        "job_id": job_id,
+        "status": "queued",
+        "progress": 0,
+        "current_step": "Waiting",
+        "error": None
+    }
 
-    os.makedirs(
-        job_dir,
-        exist_ok=True
+    (job_dir / "job.json").write_text(
+        json.dumps(job, ensure_ascii=False, indent=2),
+        encoding="utf-8"
     )
 
     return job_id, job_dir
 
 
-def job_file_path(job_id):
-
-    return os.path.join(
-        JOB_FOLDER,
-        job_id,
-        "job.json"
-    )
-
-
-def save_job(job_id, data):
-
-    path = job_file_path(job_id)
-
-    with open(
-        path,
-        "w",
-        encoding="utf-8"
-    ) as f:
-
-        json.dump(
-            data,
-            f,
-            ensure_ascii=False,
-            indent=2
-        )
-
-
-def load_job(job_id):
-
-    path = job_file_path(job_id)
-
-    if not os.path.exists(path):
-        return None
-
-    with open(
-        path,
-        "r",
-        encoding="utf-8"
-    ) as f:
-
-        return json.load(f)
-
-
-def update_job(job_id, **changes):
-
-    job = load_job(job_id)
-
-    if job is None:
-        return
-
-    job.update(changes)
-
-    job["updated_at"] = int(time.time())
-
-    save_job(
-        job_id,
-        job
-    )
-
-
-def update_pipeline(job_id, step, status):
-
-    job = load_job(job_id)
-
-    if job is None:
-        return
-
-    job["pipeline"][step] = status
-
-    job["updated_at"] = int(time.time())
-
-    save_job(
-        job_id,
-        job
-    )
-
-
-def get_ffmpeg():
-
-    return imageio_ffmpeg.get_ffmpeg_exe()
-
-
-# =========================================================
-# AUDIO EXTRACTION
-# =========================================================
-
 def extract_audio(movie_path, audio_path):
-
-    ffmpeg = get_ffmpeg()
-
     command = [
-
-        ffmpeg,
-
+        FFMPEG,
         "-y",
-
         "-i",
-        movie_path,
-
+        str(movie_path),
         "-vn",
-
         "-ac",
         "1",
-
         "-ar",
         "16000",
-
         "-c:a",
         "libmp3lame",
-
         "-b:a",
-        "64k",
-
-        audio_path
+        "48k",
+        str(audio_path)
     ]
 
     result = subprocess.run(
@@ -219,883 +102,346 @@ def extract_audio(movie_path, audio_path):
     )
 
     if result.returncode != 0:
-
         raise RuntimeError(
-            "Audio extraction failed: "
-            + result.stderr[-2000:]
+            "FFmpeg audio extraction failed:\n" + result.stderr[-3000:]
         )
 
 
-# =========================================================
-# TRANSCRIPTION
-# =========================================================
+def split_audio(audio_path, chunk_dir, seconds=300):
+    chunk_dir.mkdir(exist_ok=True)
 
-def transcribe_audio(audio_path):
+    pattern = chunk_dir / "chunk_%04d.mp3"
 
-    if client is None:
+    command = [
+        FFMPEG,
+        "-y",
+        "-i",
+        str(audio_path),
+        "-f",
+        "segment",
+        "-segment_time",
+        str(seconds),
+        "-reset_timestamps",
+        "1",
+        "-c",
+        "copy",
+        str(pattern)
+    ]
 
-        raise RuntimeError(
-            "OPENAI_API_KEY မရှိသေးပါ။"
-        )
-
-    with open(
-        audio_path,
-        "rb"
-    ) as audio_file:
-
-        result = client.audio.transcriptions.create(
-
-            model="gpt-4o-transcribe",
-
-            file=audio_file,
-
-            language="zh",
-
-            response_format="json"
-        )
-
-    return result.text
-
-
-# =========================================================
-# BURMESE RECAP
-# =========================================================
-
-def generate_burmese_recap(
-    transcript,
-    recap_style
-):
-
-    if client is None:
-
-        raise RuntimeError(
-            "OPENAI_API_KEY မရှိသေးပါ။"
-        )
-
-
-    style_map = {
-
-        "cinematic":
-            "ရုပ်ရှင်ဆန်ပြီး suspense ပါအောင်",
-
-        "natural":
-            "လူတစ်ယောက်က သူငယ်ချင်းကို ဇာတ်လမ်းပြောသလို သဘာဝကျကျ",
-
-        "fast":
-            "မြန်မြန်ဆန်ဆန်၊ အဓိကအချက်တွေကိုပဲ ထိထိမိမိ",
-
-        "detailed":
-            "ဇာတ်လမ်းအကြောင်းအရာကို အသေးစိတ်၊ အစမှအဆုံး ရှင်းပြသလို"
-    }
-
-
-    selected_style = style_map.get(
-        recap_style,
-        style_map["cinematic"]
+    result = subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
     )
 
+    if result.returncode != 0:
+        raise RuntimeError(
+            "Audio chunking failed:\n" + result.stderr[-3000:]
+        )
+
+    return sorted(chunk_dir.glob("chunk_*.mp3"))
+
+
+def transcribe_chunk(chunk_path):
+    if not groq_client:
+        raise RuntimeError(
+            "GROQ_API_KEY မတွေ့ပါ။ Render Environment ထဲမှာ "
+            "GROQ_API_KEY ထည့်ပေးပါ။"
+        )
+
+    with open(chunk_path, "rb") as audio_file:
+        result = groq_client.audio.transcriptions.create(
+            file=(chunk_path.name, audio_file.read()),
+            model="whisper-large-v3-turbo",
+            language="zh",
+            response_format="text"
+        )
+
+    return str(result)
+
+
+def generate_burmese_recap(transcript, style="detailed"):
+    if not groq_client:
+        raise RuntimeError(
+            "GROQ_API_KEY မတွေ့ပါ။"
+        )
 
     prompt = f"""
-You are an expert Myanmar movie recap script writer.
+You are a professional Burmese movie recap writer.
 
-The source movie dialogue/transcript is Chinese.
+The following transcript is Chinese movie dialogue.
 
 Write a natural Burmese movie recap script.
 
-Style:
-{selected_style}
+Style: {style}
 
 Requirements:
-
 - Write entirely in Burmese.
-- Do not translate word-for-word.
-- Explain events clearly.
-- Keep character relationships understandable.
-- Preserve important plot events.
-- Make it engaging for a Myanmar audience.
+- Explain the story clearly.
+- Keep important characters and events.
+- Make it suitable for Burmese YouTube movie recap narration.
 - Do not invent events that are not supported by the transcript.
-- Do not include unnecessary analysis.
-- Do not mention that you are an AI.
-- Format as a narration script.
+- Do not translate every sentence literally.
+- Turn the dialogue into a coherent story.
+- Use natural spoken Burmese.
+- Organize the story from beginning to end.
 
 Chinese transcript:
-
 {transcript}
 """
 
-
-    response = client.responses.create(
-
-        model="gpt-5.6-luna",
-
-        input=prompt
+    response = groq_client.chat.completions.create(
+        model="openai/gpt-oss-20b",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are an expert Burmese movie recap writer. "
+                    "Always answer in natural Burmese."
+                )
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.4,
+        max_tokens=6000
     )
 
+    return response.choices[0].message.content
 
-    return response.output_text
 
-
-# =========================================================
-# PIPELINE
-# =========================================================
-
-def run_pipeline(
-    job_id,
-    movie_path,
-    job_dir,
-    recap_style
-):
+def process_job(job_id, movie_path, style):
+    job_dir = JOBS_DIR / job_id
 
     try:
+        update_job(
+            job_dir,
+            status="processing",
+            progress=5,
+            current_step="Audio Extraction"
+        )
+
+        audio_path = job_dir / "audio.mp3"
+        extract_audio(movie_path, audio_path)
 
         update_job(
-            job_id,
-            status="processing",
-            message="AI processing စတင်နေပါတယ်။"
-        )
-
-
-        # -------------------------------------------------
-        # AUDIO
-        # -------------------------------------------------
-
-        update_pipeline(
-            job_id,
-            "audio_extraction",
-            "processing"
-        )
-
-
-        audio_path = os.path.join(
             job_dir,
-            "movie_audio.mp3"
+            progress=15,
+            current_step="Audio Chunking"
         )
 
+        chunk_dir = job_dir / "chunks"
+        chunks = split_audio(audio_path, chunk_dir, seconds=300)
 
-        extract_audio(
-            movie_path,
-            audio_path
-        )
+        if not chunks:
+            raise RuntimeError("No audio chunks were created.")
 
-
-        update_pipeline(
-            job_id,
-            "audio_extraction",
-            "completed"
-        )
-
-
-        # -------------------------------------------------
-        # TRANSCRIPTION
-        # -------------------------------------------------
-
-        update_pipeline(
-            job_id,
-            "transcription",
-            "processing"
-        )
-
-
-        transcript = transcribe_audio(
-            audio_path
-        )
-
-
-        transcript_path = os.path.join(
+        update_job(
             job_dir,
-            "transcript.txt"
+            progress=20,
+            current_step="Chinese Speech → Text",
+            total_chunks=len(chunks)
         )
 
+        transcripts = []
 
-        with open(
-            transcript_path,
-            "w",
+        for index, chunk in enumerate(chunks):
+            text = transcribe_chunk(chunk)
+
+            if text.strip():
+                transcripts.append(
+                    f"[Chunk {index + 1}]\n{text.strip()}"
+                )
+
+            progress = 20 + int(
+                ((index + 1) / len(chunks)) * 45
+            )
+
+            update_job(
+                job_dir,
+                progress=progress,
+                current_step=(
+                    f"Chinese Speech → Text "
+                    f"({index + 1}/{len(chunks)})"
+                )
+            )
+
+        full_transcript = "\n\n".join(transcripts)
+
+        transcript_path = job_dir / "transcript.txt"
+        transcript_path.write_text(
+            full_transcript,
             encoding="utf-8"
-        ) as f:
-
-            f.write(transcript)
-
-
-        update_pipeline(
-            job_id,
-            "transcription",
-            "completed"
         )
 
-
-        # -------------------------------------------------
-        # BURMESE RECAP
-        # -------------------------------------------------
-
-        update_pipeline(
-            job_id,
-            "recap_script",
-            "processing"
+        update_job(
+            job_dir,
+            progress=70,
+            current_step="Burmese Recap Script"
         )
-
 
         recap = generate_burmese_recap(
-            transcript,
-            recap_style
+            full_transcript,
+            style
         )
 
-
-        recap_path = os.path.join(
-            job_dir,
-            "burmese_recap.txt"
-        )
-
-
-        with open(
-            recap_path,
-            "w",
+        recap_path = job_dir / "burmese_recap.txt"
+        recap_path.write_text(
+            recap,
             encoding="utf-8"
-        ) as f:
-
-            f.write(recap)
-
-
-        update_pipeline(
-            job_id,
-            "recap_script",
-            "completed"
         )
-
-
-        # -------------------------------------------------
-        # NEXT PIPELINE
-        # -------------------------------------------------
-
-        update_pipeline(
-            job_id,
-            "narration",
-            "pending"
-        )
-
-        update_pipeline(
-            job_id,
-            "scene_selection",
-            "pending"
-        )
-
-        update_pipeline(
-            job_id,
-            "subtitle",
-            "pending"
-        )
-
-        update_pipeline(
-            job_id,
-            "video_render",
-            "pending"
-        )
-
-        update_pipeline(
-            job_id,
-            "thumbnail",
-            "pending"
-        )
-
-        update_pipeline(
-            job_id,
-            "final_output",
-            "pending"
-        )
-
 
         update_job(
+            job_dir,
+            progress=80,
+            current_step="Preparing Results"
+        )
 
-            job_id,
-
+        update_job(
+            job_dir,
             status="completed",
-
-            message=
-                "Chinese transcription နှင့် Burmese recap script ပြီးပါပြီ။",
-
-            files={
-
-                "transcript":
-                    "transcript.txt",
-
-                "burmese_recap":
-                    "burmese_recap.txt"
-            }
+            progress=100,
+            current_step="Completed"
         )
 
-
-    except Exception as e:
-
+    except Exception as exc:
         update_job(
-
-            job_id,
-
+            job_dir,
             status="error",
-
-            error=str(e)
+            progress=0,
+            current_step="Error",
+            error=str(exc)
         )
 
-
-# =========================================================
-# HOME
-# =========================================================
 
 @app.route("/")
 def home():
-
     return jsonify({
-
+        "message": "MovieRecap MM AI backend is running",
         "status": "ok",
-
-        "message":
-            "MovieRecap MM AI backend is running",
-
-        "version":
-            "4.0",
-
-        "openai":
-            bool(OPENAI_API_KEY)
+        "version": "5.0-free",
+        "groq": bool(GROQ_API_KEY),
+        "openai": False
     })
 
-
-# =========================================================
-# HEALTH
-# =========================================================
 
 @app.route("/health")
 def health():
-
     return jsonify({
-
-        "status": "healthy",
-
-        "service":
-            "MovieRecap MM AI",
-
-        "version":
-            "4.0"
+        "status": "ok",
+        "groq": bool(GROQ_API_KEY),
+        "openai": False
     })
 
 
-# =========================================================
-# PROCESS
-# =========================================================
-
-@app.route(
-    "/process",
-    methods=["POST"]
-)
-def process_movie():
-
-    try:
-
-        movie_file = request.files.get(
-            "movie"
-        )
-
-        voice_file = request.files.get(
-            "voice"
-        )
-
-        movie_url = request.form.get(
-            "movie_url",
-            ""
-        ).strip()
-
-        recap_style = request.form.get(
-            "recap_style",
-            "cinematic"
-        ).strip()
-
-        video_format = request.form.get(
-            "video_format",
-            "youtube"
-        ).strip()
-
-
-        # -------------------------------------------------
-        # SOURCE
-        # -------------------------------------------------
-
-        if (
-            not movie_file
-            or not movie_file.filename
-        ) and not movie_url:
-
-            return jsonify({
-
-                "status": "error",
-
-                "message":
-                    "Movie file သို့မဟုတ် authorized video URL ထည့်ပါ။"
-
-            }), 400
-
-
-        # -------------------------------------------------
-        # API KEY
-        # -------------------------------------------------
-
-        if client is None:
-
-            return jsonify({
-
-                "status": "error",
-
-                "message":
-                    "OPENAI_API_KEY မထည့်ရသေးပါ။"
-
-            }), 503
-
-
-        # -------------------------------------------------
-        # JOB
-        # -------------------------------------------------
-
-        job_id, job_dir = create_job()
-
-
-        movie_path = None
-
-
-        # -------------------------------------------------
-        # MOVIE FILE
-        # -------------------------------------------------
-
-        if (
-            movie_file
-            and movie_file.filename
-        ):
-
-            if not allowed_extension(
-                movie_file.filename,
-                ALLOWED_VIDEO_EXTENSIONS
-            ):
-
-                return jsonify({
-
-                    "status": "error",
-
-                    "message":
-                        "Supported video format မဟုတ်ပါ။"
-
-                }), 400
-
-
-            safe_name = secure_filename(
-                movie_file.filename
-            )
-
-
-            movie_path = os.path.join(
-                job_dir,
-                "movie_" + safe_name
-            )
-
-
-            movie_file.save(
-                movie_path
-            )
-
-
-        # -------------------------------------------------
-        # VOICE SAMPLE
-        # -------------------------------------------------
-
-        voice_saved = False
-
-
-        if (
-            voice_file
-            and voice_file.filename
-        ):
-
-            if not allowed_extension(
-                voice_file.filename,
-                ALLOWED_AUDIO_EXTENSIONS
-            ):
-
-                return jsonify({
-
-                    "status": "error",
-
-                    "message":
-                        "Supported audio format မဟုတ်ပါ။"
-
-                }), 400
-
-
-            safe_voice_name = secure_filename(
-                voice_file.filename
-            )
-
-
-            voice_path = os.path.join(
-                job_dir,
-                "voice_" + safe_voice_name
-            )
-
-
-            voice_file.save(
-                voice_path
-            )
-
-
-            voice_saved = True
-
-
-        # -------------------------------------------------
-        # JOB DATA
-        # -------------------------------------------------
-
-        job_data = {
-
-            "job_id":
-                job_id,
-
-            "status":
-                "queued",
-
-            "created_at":
-                int(time.time()),
-
-            "movie": {
-
-                "uploaded":
-                    bool(movie_path),
-
-                "filename":
-                    movie_file.filename
-                    if movie_path
-                    else None,
-
-                "url":
-                    movie_url
-                    if movie_url
-                    else None
-            },
-
-            "voice": {
-
-                "uploaded":
-                    voice_saved
-            },
-
-            "options": {
-
-                "recap_style":
-                    recap_style,
-
-                "video_format":
-                    video_format
-            },
-
-            "pipeline": {
-
-                "upload":
-                    "completed",
-
-                "audio_extraction":
-                    "queued",
-
-                "transcription":
-                    "queued",
-
-                "recap_script":
-                    "queued",
-
-                "narration":
-                    "pending",
-
-                "scene_selection":
-                    "pending",
-
-                "subtitle":
-                    "pending",
-
-                "video_render":
-                    "pending",
-
-                "thumbnail":
-                    "pending",
-
-                "final_output":
-                    "pending"
-            }
-        }
-
-
-        save_job(
-            job_id,
-            job_data
-        )
-
-
-        # -------------------------------------------------
-        # START
-        # -------------------------------------------------
-
-        if movie_path:
-
-            worker = threading.Thread(
-
-                target=run_pipeline,
-
-                args=(
-
-                    job_id,
-
-                    movie_path,
-
-                    job_dir,
-
-                    recap_style
-                ),
-
-                daemon=True
-            )
-
-            worker.start()
-
-        else:
-
-            update_job(
-
-                job_id,
-
-                status=
-                    "waiting_for_video_download",
-
-                message=
-                    "URL processing ကို နောက် pipeline မှာ ထည့်ပါမယ်။"
-            )
-
-
+@app.route("/process", methods=["POST"])
+def process():
+    movie = request.files.get("movie")
+    style = request.form.get("style", "detailed")
+    video_format = request.form.get("video_format", "youtube")
+    voice_sample = request.files.get("voice_sample")
+
+    if not movie:
         return jsonify({
+            "error": "Movie file မတွေ့ပါ။"
+        }), 400
 
-            "status":
-                "queued",
-
-            "message":
-                "Movie ကို လက်ခံပြီး AI processing စတင်ပါပြီ။",
-
-            "job_id":
-                job_id,
-
-            "status_url":
-                "/status/" + job_id
-
-        }), 202
-
-
-    except Exception as e:
-
+    if not GROQ_API_KEY:
         return jsonify({
-
-            "status":
-                "error",
-
-            "message":
-                str(e)
-
+            "error": (
+                "GROQ_API_KEY မရှိသေးပါ။ "
+                "Render Environment ထဲမှာ Free Groq API key ထည့်ပါ။"
+            )
         }), 500
 
+    job_id, job_dir = create_job()
 
-# =========================================================
-# STATUS
-# =========================================================
+    movie_path = job_dir / movie.filename
+    movie.save(movie_path)
 
-@app.route(
-    "/status/<job_id>",
-    methods=["GET"]
-)
-def job_status(job_id):
+    if voice_sample:
+        voice_path = job_dir / voice_sample.filename
+        voice_sample.save(voice_path)
 
-    job = load_job(job_id)
-
-
-    if job is None:
-
-        return jsonify({
-
-            "status":
-                "error",
-
-            "message":
-                "Job မတွေ့ပါ။"
-
-        }), 404
-
-
-    return jsonify(job)
-
-
-# =========================================================
-# JOB FILE DOWNLOAD / VIEW
-# =========================================================
-
-@app.route(
-    "/jobs/<job_id>/<filename>",
-    methods=["GET"]
-)
-def job_file(job_id, filename):
-
-    job_dir = os.path.join(
-        JOB_FOLDER,
-        job_id
+    update_job(
+        job_dir,
+        movie=movie.filename,
+        style=style,
+        video_format=video_format,
+        voice_sample=bool(voice_sample)
     )
 
+    worker = threading.Thread(
+        target=process_job,
+        args=(job_id, movie_path, style),
+        daemon=True
+    )
 
-    if not os.path.isdir(job_dir):
+    worker.start()
 
+    return jsonify({
+        "status": "accepted",
+        "job_id": job_id,
+        "message": "Free AI processing started."
+    })
+
+
+@app.route("/status/<job_id>")
+def status(job_id):
+    job_dir = JOBS_DIR / job_id
+    job_file = job_dir / "job.json"
+
+    if not job_file.exists():
         return jsonify({
-
-            "status":
-                "error",
-
-            "message":
-                "Job မတွေ့ပါ။"
-
+            "error": "Job not found"
         }), 404
 
+    data = json.loads(
+        job_file.read_text(encoding="utf-8")
+    )
 
-    safe_filename = secure_filename(
+    return jsonify(data)
+
+
+@app.route("/jobs/<job_id>/<filename>")
+def job_file(job_id, filename):
+    job_dir = JOBS_DIR / job_id
+
+    if not job_dir.exists():
+        return jsonify({
+            "error": "Job not found"
+        }), 404
+
+    return send_from_directory(
+        job_dir,
         filename
     )
 
 
-    if safe_filename != filename:
-
-        return jsonify({
-
-            "status":
-                "error",
-
-            "message":
-                "Invalid filename"
-
-        }), 400
-
-
-    file_path = os.path.join(
-        job_dir,
-        safe_filename
-    )
-
-
-    if not os.path.isfile(file_path):
-
-        return jsonify({
-
-            "status":
-                "error",
-
-            "message":
-                "File မတွေ့ပါ။"
-
-        }), 404
-
-
-    return send_from_directory(
-        job_dir,
-        safe_filename,
-        as_attachment=False
-    )
-
-
-# =========================================================
-# PIPELINE INFO
-# =========================================================
-
-@app.route(
-    "/pipeline",
-    methods=["GET"]
-)
+@app.route("/pipeline")
 def pipeline():
-
     return jsonify({
-
-        "status":
-            "ok",
-
-        "pipeline": [
-
-            {
-                "step": 1,
-                "name": "Movie Upload",
-                "status": "implemented"
-            },
-
-            {
-                "step": 2,
-                "name": "Audio Extraction",
-                "status": "implemented"
-            },
-
-            {
-                "step": 3,
-                "name": "Chinese Speech Transcription",
-                "status": "implemented"
-            },
-
-            {
-                "step": 4,
-                "name": "Burmese Recap Script",
-                "status": "implemented"
-            },
-
-            {
-                "step": 5,
-                "name": "Burmese Narration",
-                "status": "next"
-            },
-
-            {
-                "step": 6,
-                "name": "AI Scene Selection",
-                "status": "next"
-            },
-
-            {
-                "step": 7,
-                "name": "Subtitle Generation",
-                "status": "next"
-            },
-
-            {
-                "step": 8,
-                "name": "Video Rendering",
-                "status": "next"
-            },
-
-            {
-                "step": 9,
-                "name": "Thumbnail",
-                "status": "next"
-            },
-
-            {
-                "step": 10,
-                "name": "Final Download",
-                "status": "next"
-            }
-        ]
+        "version": "5.0-free",
+        "steps": [
+            "Audio Extraction",
+            "Audio Chunking",
+            "Chinese Speech → Text",
+            "Burmese Recap Script",
+            "Burmese Narration",
+            "AI Scene Selection",
+            "Burmese Subtitles",
+            "Video Rendering",
+            "Thumbnail"
+        ],
+        "ai_provider": "Groq Free Tier"
     })
 
 
-# =========================================================
-# SERVER
-# =========================================================
-
 if __name__ == "__main__":
-
-    port = int(
-        os.environ.get(
-            "PORT",
-            10000
-        )
-    )
-
-
+    port = int(os.environ.get("PORT", 5000))
     app.run(
         host="0.0.0.0",
         port=port
